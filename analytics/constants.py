@@ -44,23 +44,22 @@ plot_style = {
     'font_color' : 'rgb(200, 200, 200)'
 }
 
-custom_index_string = '''
+index_string = '''
 <!DOCTYPE html>
 <html>
     <head>
         {%metas%}
-        <title>{%title%}</title>
-        {%favicon%}
+        <title>ePlumbers</title>
+        <link rel="icon" href="assets/pipe_icon.png" type="image/png" sizes="16x16">
         {%css%}
     </head>
     <body>
-        <div>My Custom header</div>
         {%app_entry%}
         <footer>
             {%config%}
             {%scripts%}
         </footer>
-        <div>My Custom footer</div>
+        <div>Hackathon Oct 2018</div>
     </body>
 </html>
 '''

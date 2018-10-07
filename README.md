@@ -20,8 +20,9 @@ The following improvements are on the cards:
 ### Formatting
 * Find a more visually appealing audio player
 * Fix the formatting (margins)
-* Use a custom favicon and tab label
 ### Features
-* Timeline showing which speaker is talking
+* Audio playback visualisation
+* Fix formatting of speaker timeline
 * Add sentiment analysis graphing
+* Re-sort word histogram when filtered on speaker
 * Link audio playback time to other features such as speaker ID card

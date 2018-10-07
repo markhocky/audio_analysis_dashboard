@@ -6,7 +6,7 @@ import pandas as pd
 import plotly.graph_objs as go
 
 # Local imports
-from constants import stopwords, speaker_data, plot_colours, plot_style
+from constants import stopwords, speaker_data, index_string, plot_colours, plot_style
 
 # Norton interviews Keanu video: https://www.youtube.com/watch?v=QItsI9ynzxo
 
@@ -38,6 +38,22 @@ speakers = list(text_df.speaker.unique())
 time_blocks = pd.to_datetime(text_df.time_ms, unit='ms') # Convert time to datetime
 time_blocks = pd.Series(index=time_blocks.values).resample('1S').count() # round to 1 second intervals
 
+# SPEAKER TIMELINE
+def speaker_timeline_dataframe(text_df, interval='5S'):
+    speakers = list(text_df.speaker.unique())
+    times = pd.to_datetime(text_df.time_ms, unit='ms') # Convert time to datetime
+    times = times.apply(lambda t: t.round(interval))
+    tdf = text_df.copy()
+    tdf.time_ms = times
+    speaker_times = tdf.groupby(['speaker', 'time_ms']).count()
+    speaker_timeline = pd.DataFrame(index=times.unique(), columns=speakers)
+    for i, s in enumerate(speakers):
+        speaker_timeline.loc[speaker_times.loc[s].index, s] = i
+    return speaker_timeline
+
+speaker_timeline = speaker_timeline_dataframe(text_df)
+
+
 # Set up plotting parameters
 colours = plot_colours(len(speakers))
 
@@ -47,6 +63,7 @@ colours = plot_colours(len(speakers))
 # Application
 app = dash.Dash(__name__) # This will pull css from 'assets' folder
 app.css.config.serve_locally = True
+app.index_string = index_string
 app.layout = html.Div([
     # Heading
     html.Div([
@@ -115,6 +132,44 @@ app.layout = html.Div([
                 )
             )
             ),
+            html.Div([
+                dcc.Graph(id='spealer-timeline',
+                    style={
+                        'height': 200
+                    },
+                    figure={
+                        'data': [
+                            go.Scatter(
+                                x=speaker_timeline.index,
+                                y=speaker_timeline[s],
+                                marker=dict(
+                                    color=colours[speakers.index(s)],
+                                    line=dict(
+                                        color=colours[speakers.index(s)],
+                                        width=4
+                                    )
+                                ), 
+                                name=s
+                            ) for s in speakers
+                        ],
+                        'layout': go.Layout(
+                            plot_bgcolor=plot_style['background'],
+                            paper_bgcolor=plot_style['background'],
+                            font=dict(color=plot_style['font_color']),
+                            yaxis=dict(
+                                tickvals=list(range(len(speakers))), 
+                                ticktext=speakers, 
+                                range=(-1, len(speakers) + 1)),
+                            xaxis=dict(tickformat='%M:%S'),
+                            margin=dict(
+                                l=40, b=60, t=10, r=10
+                            ),
+                            showlegend=False,
+                            hovermode='closest'
+                        )
+                    }
+                )
+            ]),
             dcc.Dropdown(
                 id='word-dropdown', 
                 options=[{'label': w, 'value': w} for w in word_count.index], 
@@ -215,12 +270,17 @@ app.layout = html.Div([
     
 ])
 
+
+
+
 # WORD SELECTION CALLBACKS
 @app.callback(
     Output('word-timeline', 'figure'), 
     [Input('word-dropdown', 'value')]
 )
 def update_word_timeline(words):
+    if words is None:
+        return None
     times = pd.to_datetime(text_df.time_ms, unit='ms') # Convert time to datetime
     times = times.apply(lambda t: t.round('5S')) # round to 5 second intervals
     word_key = text_df.word.apply(lambda w: w in words)
